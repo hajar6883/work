@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catenary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#101011; --panel:#17171a; --ink:#e7e5e2; --muted:#8a8884;
+  --rule:#262628; --rule2:#3c3c40; --hi:#faf8f5;
+  --sans:"Inter",system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:15.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-feature-settings:'ss01','cv11','cv02';font-variant-numeric:tabular-nums}
+.wrap{max-width:66ch;margin:0 auto;padding-block:56px 96px;padding-left:20px;padding-right:20px}
+a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule2);padding-bottom:1px}
+a:hover{border-bottom-color:var(--ink);color:var(--hi)}
+a:focus-visible{outline:2px solid var(--muted);outline-offset:3px}
+.lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted);display:block}
+h1{font-size:28px;font-weight:600;letter-spacing:-.022em;margin:3px 0 0;
+  line-height:1.2;color:var(--hi);text-wrap:balance}
+h2{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);margin:46px 0 14px}
+h3{font-size:18.5px;font-weight:600;margin:0;line-height:1.3;letter-spacing:-.015em;
+  color:var(--hi);text-wrap:balance}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:16px;margin:10px 0 0;text-wrap:balance}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  flex-wrap:wrap;border-bottom:1px solid var(--rule2);padding-bottom:12px}
+.item{display:flex;gap:22px;padding:24px 0;border-bottom:1px solid var(--rule)}
+.item:last-of-type{border-bottom:1px solid var(--rule2)}
+.fig{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);
+  padding-top:6px;min-width:32px;flex-shrink:0}
+.body{flex:1;min-width:0}
+.desc{margin:7px 0 0;color:var(--ink)}
+.stack{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.72}
+.go{display:flex;gap:20px;margin-top:12px;font-family:var(--mono);font-size:11.5px}
+.links{display:flex;flex-wrap:wrap;gap:20px;margin-top:20px;font-family:var(--mono);font-size:12px}
+pre{background:var(--panel);border:1px solid var(--rule);padding:18px 20px;overflow-x:auto;
+  font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--muted);margin:0 0 14px}
+pre b{color:var(--hi);font-weight:500}
+ul{margin:0 0 14px;padding-left:19px}
+li{margin-bottom:9px}
+li::marker{color:var(--rule2)}
+.n{color:var(--hi);font-weight:600;font-variant-numeric:tabular-nums}
+b{font-weight:600;color:var(--hi)}
+.back{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);border:0;display:inline-block;margin-bottom:34px}
+.back:hover{color:var(--hi);border:0}
+.ghline{font-family:var(--mono);font-size:12px;margin:14px 0 0;word-break:break-all;color:var(--muted)}
+.foot{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:56px;
+  padding-top:14px;border-top:1px solid var(--rule)}
+@media (max-width:520px){
+  .wrap{padding-block:34px 60px}
+  h1{font-size:24px}
+  .item{gap:0;flex-direction:column}
+  .fig{padding-top:0;margin-bottom:8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">&larr; Index</a>
+<div class="masthead">
+  <div><span class="lab">Fig. 01</span><h1>Power line detection from LiDAR</h1></div>
+</div>
+<p class="lede">Finding overhead cables in an aerial scan and measuring how far they sag.</p>
+<p class="ghline"><a href="https://github.com/hajar6883/catenary-wire-modeling">github.com/hajar6883/catenary-wire-modeling</a></p>
+
+<h2>The constraint</h2>
+<p>Inspecting an overhead power line means flying the corridor with a LiDAR scanner
+and then picking the wires out of millions of unlabelled points by hand. Nothing in the raw
+scan says which points are cable and which are vegetation, pylon or ground.</p>
+<p>Sag is what the inspection is actually after. A conductor hanging lower than it should is
+a fault waiting to happen, and a hanging cable follows a <b>catenary</b>, the curve a chain
+takes under its own weight. Fit that curve and you get a number you can act on, instead of a
+cloud of points somebody has to look at.</p>
+
+<h2>How it works</h2>
+<pre>  .parquet point cloud
+        |
+        v
+   <b>PCA</b>            reduce, find the dominant direction of each structure
+        |
+        v
+   <b>DBSCAN / HDBSCAN</b>   group points into individual wires
+        |
+        v
+   <b>catenary fit</b>   least squares on y = a·cosh((x-b)/a) + c   (SciPy)
+        |
+        v
+   <b>Postgres</b>       fitted parameters + RMSE per wire</pre>
+<p>One core module does parse, detect and save. Three entry points share it, so the
+same code path runs whichever way the data arrives:</p>
+<ul>
+  <li><b>CLI</b> for a single file, with interactive 3D plots to check the fit by eye.</li>
+  <li><b>FastAPI</b> for on-demand uploads, one point cloud per request.</li>
+  <li><b>Prefect flow</b> for sweeping a whole directory unattended.</li>
+</ul>
+
+<h2>Evidence</h2>
+<ul>
+  <li><span class="n">10</span> pytest tests run against a real Postgres service container in CI, not a mock.</li>
+  <li>An idempotence test: a second pass over <span class="n">4</span> point clouds skips all 4 and ingests <span class="n">0</span>. Re-running the pipeline cannot duplicate rows.</li>
+  <li>Every push to <code>main</code> builds the image, health-checks it, and publishes to GHCR.</li>
+  <li>Each <code>/detect</code> call persists its fitted parameters and RMSE, so a bad fit is visible after the fact rather than lost.</li>
+</ul>
+
+<p class="foot"><a href="https://github.com/hajar6883/catenary-wire-modeling">github.com/hajar6883/catenary-wire-modeling</a> &nbsp;&middot;&nbsp; <a href="../../index.html">Back to index</a></p>
+</div>
+</body>
+</html>
