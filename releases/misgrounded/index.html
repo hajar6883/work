@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misgrounded</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#101011; --panel:#17171a; --ink:#e7e5e2; --muted:#8a8884;
+  --rule:#262628; --rule2:#3c3c40; --hi:#faf8f5;
+  --sans:"Inter",system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:15.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-feature-settings:'ss01','cv11','cv02';font-variant-numeric:tabular-nums}
+.wrap{max-width:66ch;margin:0 auto;padding-block:56px 96px;padding-left:20px;padding-right:20px}
+a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule2);padding-bottom:1px}
+a:hover{border-bottom-color:var(--ink);color:var(--hi)}
+a:focus-visible{outline:2px solid var(--muted);outline-offset:3px}
+.lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted);display:block}
+h1{font-size:28px;font-weight:600;letter-spacing:-.022em;margin:3px 0 0;
+  line-height:1.2;color:var(--hi);text-wrap:balance}
+h2{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);margin:46px 0 14px}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:16px;margin:10px 0 0;text-wrap:balance}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  flex-wrap:wrap;border-bottom:1px solid var(--rule2);padding-bottom:12px}
+pre{background:var(--panel);border:1px solid var(--rule);padding:18px 20px;overflow-x:auto;
+  font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--muted);margin:0 0 14px}
+pre b{color:var(--hi);font-weight:500}
+ul{margin:0 0 14px;padding-left:19px}
+li{margin-bottom:9px}
+li::marker{color:var(--rule2)}
+.n{color:var(--hi);font-weight:600;font-variant-numeric:tabular-nums}
+b{font-weight:600;color:var(--hi)}
+.back{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);border:0;display:inline-block;margin-bottom:34px}
+.back:hover{color:var(--hi);border:0}
+.ghline{font-family:var(--mono);font-size:12px;margin:14px 0 0;word-break:break-all;color:var(--muted)}
+.foot{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:56px;
+  padding-top:14px;border-top:1px solid var(--rule)}
+.cap{font-family:var(--mono);font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.65}
+.tbl{width:100%;overflow-x:auto;margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);border-bottom-color:var(--rule2)}
+td.num{text-align:right;white-space:nowrap;color:var(--hi);font-weight:600}
+th.num{text-align:right}
+.ex{background:var(--panel);border:1px solid var(--rule);padding:16px 20px;margin:0 0 14px}
+.ex p{margin:0 0 8px}
+.ex p:last-child{margin:0}
+.ex .who{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:520px){
+  .wrap{padding-block:34px 60px}
+  h1{font-size:24px}
+  table{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">&larr; Index</a>
+<div class="masthead">
+  <div><span class="lab">Fig. 05</span><h1>Misgrounded, catching true facts filed under the wrong exhibit.</h1></div>
+</div>
+<p class="lede">Does each fact in a lawyer's brief really sit in the exhibit it cites? An LLM judge, run twice, to find out.</p>
+<p class="ghline"><a href="https://github.com/hajar6883/misgrounded">github.com/hajar6883/misgrounded</a></p>
+
+<h2>Premise</h2>
+<p>A legal brief backs every fact with an exhibit number. LLMs now draft these briefs, and
+the tools around them already check that the cited <b>case law</b> exists. The facts get less
+attention.</p>
+<p>The dangerous error isn't the invented fact. It's the <b>true fact under the wrong
+exhibit</b>. It reads perfectly, and it only surfaces when the judge, or the other side,
+opens the exhibit.</p>
+<p>The standard LLM check, faithfulness, can't see it: it asks whether a claim is supported
+by the sources as a whole. True somewhere counts as true. I call these claims
+<b>misgrounded</b>.</p>
+
+<h2>What it does</h2>
+<pre><b>01  extract</b>   split the brief into claims, one per cited value
+<b>02  rules</b>     is this exact amount, date or % in the cited exhibit?
+<b>03  pass A</b>    LLM judge, all exhibits: is the claim true anywhere?
+<b>04  pass B</b>    same judge, same prompt, cited exhibit only: is it true there?</pre>
+<p>Passes A, fails B: misgrounded. The rules are cheap and never hallucinate, so they go
+first; the judge only sees what they can't settle, and must quote its evidence word for word.</p>
+
+<h2>In practice</h2>
+<div class="ex">
+  <p class="who">Brief</p>
+  <p><i>"&hellip;invoiced at &euro;44,400 excl. VAT, paid in full (exhibit 2)."</i></p>
+</div>
+<div class="ex">
+  <p class="who">Pass A &middot; all exhibits &middot; supported</p>
+  <p>&euro;44,400 was invoiced for phase 1 and paid in full.</p>
+</div>
+<div class="ex">
+  <p class="who">Pass B &middot; exhibit 2 only &middot; not found</p>
+  <p>The exhibit shows a total of &euro;62,400 and says nothing about payment.</p>
+</div>
+<p class="cap">Judge explanations, translated from French. The amount lives in exhibit 4, the invoice. Exhibit 2 is the purchase order.</p>
+
+<h2>Benchmark</h2>
+<p>You can't measure what a checker catches without knowing where the errors are, so the
+test case is fictional on purpose: a failed ERP rollout written as a French commercial
+dispute, <span class="n">10</span> exhibits, <span class="n">55</span> ground-truth facts.
+An LLM drafted the brief; a copy got <span class="n">12</span> planted errors.</p>
+<div class="tbl"><table>
+  <tr><th></th><th class="num">Result</th></tr>
+  <tr><td>Planted errors caught (rules alone)</td><td class="num">7 / 12</td></tr>
+  <tr><td>Planted errors caught (rules + judge)</td><td class="num">10 / 12</td></tr>
+  <tr><td>False alerts on the clean brief, 32 claims</td><td class="num">1</td></tr>
+  <tr><td>Citations broken by inserting one exhibit</td><td class="num">14 / 25</td></tr>
+  <tr><td>&hellip; with stable document IDs</td><td class="num">0 / 25</td></tr>
+</table></div>
+<p>The two misses are instructive: a letter that <b>paraphrases</b> a contract clause, accepted
+as proof of it, and a <b>right date for the wrong event</b>, which the rules confirm before the
+judge can object. The one false alert is an argument, not a fact.</p>
+<p>The last two rows are a different failure: exhibit numbers are positions, not identities.
+Insert one document and more than half the citations silently point elsewhere.</p>
+<p class="cap">One fictional case, one model family, 66 claims. Planted errors aren't natural ones, so recall and false alerts are measured on separate briefs and never averaged.</p>
+
+<h2>Get it</h2>
+<p>Python, no API key needed to replay: every model answer is cached in the repo. Setup and
+commands are in the README on <a href="https://github.com/hajar6883/misgrounded">GitHub</a>.</p>
+
+<p class="foot"><a href="https://github.com/hajar6883/misgrounded">github.com/hajar6883/misgrounded</a> &nbsp;&middot;&nbsp; <a href="../../index.html">Back to index</a></p>
+</div>
+</body>
+</html>
