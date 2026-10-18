@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bank reports agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#101011; --panel:#17171a; --ink:#e7e5e2; --muted:#8a8884;
+  --rule:#262628; --rule2:#3c3c40; --hi:#faf8f5;
+  --sans:"Inter",system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:15.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-feature-settings:'ss01','cv11','cv02';font-variant-numeric:tabular-nums}
+.wrap{max-width:66ch;margin:0 auto;padding-block:56px 96px;padding-left:20px;padding-right:20px}
+a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule2);padding-bottom:1px}
+a:hover{border-bottom-color:var(--ink);color:var(--hi)}
+a:focus-visible{outline:2px solid var(--muted);outline-offset:3px}
+h1{font-size:28px;font-weight:600;letter-spacing:-.022em;margin:3px 0 0;
+  line-height:1.2;color:var(--hi);text-wrap:balance}
+h2{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);margin:46px 0 14px}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:16px;margin:10px 0 0;text-wrap:balance}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  flex-wrap:wrap;border-bottom:1px solid var(--rule2);padding-bottom:12px}
+pre{background:var(--panel);border:1px solid var(--rule);padding:18px 20px;overflow-x:auto;
+  font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--muted);margin:0 0 14px}
+pre b{color:var(--hi);font-weight:500}
+ul{margin:0 0 14px;padding-left:19px}
+li{margin-bottom:9px}
+li::marker{color:var(--rule2)}
+.n{color:var(--hi);font-weight:600;font-variant-numeric:tabular-nums}
+b{font-weight:600;color:var(--hi)}
+.back{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);border:0;display:inline-block;margin-bottom:34px}
+.back:hover{color:var(--hi);border:0}
+.ghline{font-family:var(--mono);font-size:12px;margin:14px 0 0;word-break:break-all;color:var(--muted)}
+.foot{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:56px;
+  padding-top:14px;border-top:1px solid var(--rule)}
+.cap{font-family:var(--mono);font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.65}
+.tbl{width:100%;overflow-x:auto;margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);border-bottom-color:var(--rule2)}
+code{font-family:var(--mono);font-size:13px;color:var(--hi)}
+@media (max-width:520px){
+  .wrap{padding-block:34px 60px}
+  h1{font-size:24px}
+  table{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../../index.html">&larr; Index</a>
+<div class="masthead">
+  <div><h1>Bank reports agent, answers from annual reports with the page they come from.</h1></div>
+</div>
+<p class="lede">Questions across French banks' annual reports, answered with page-level citations. A plain RAG pipeline against an agent that checks its own figures.</p>
+<p class="ghline"><a href="https://github.com/hajar6883/bank-reports-agent">github.com/hajar6883/bank-reports-agent</a></p>
+
+<h2>Premise</h2>
+<p>A bank's universal registration document runs to several hundred pages, and the figures
+that matter (capital ratios, net income, cost of risk) sit mostly in <b>tables</b>. Extract
+those tables as plain text and the rows and columns collapse into a stream of numbers: the
+model can no longer tell which figure belongs to which year.</p>
+<p>Comparisons make it worse. "Compare the CET1 ratios of BNP Paribas and Soci&eacute;t&eacute;
+G&eacute;n&eacute;rale" needs one fact from each report; a single retrieval pass often returns
+both passages from the same bank.</p>
+<p>The question: <b>how much accuracy does an agent buy</b> on multi-bank and table questions,
+and at what cost in tokens and latency?</p>
+
+<h2>What it does</h2>
+<pre><b>01  ingest</b>    page-aware chunks; tables kept as markdown, stored separately
+<b>02  search</b>    dense (pgvector) + full-text in one Postgres, merged with RRF
+<b>03  serve</b>     search exposed as an MCP server: list, search, read a page
+<b>04  agent</b>     plan per bank &rarr; retrieve &rarr; answer &rarr; check figures, retry if unsupported</pre>
+<p>Every chunk stays on one page, so every citation points at one page. The agent is a fixed
+graph with a capped number of retries rather than an open loop: the worst-case cost is known
+in advance, and each step can be inspected.</p>
+
+<h2>Design choices</h2>
+<ul>
+  <li><b>Hybrid search.</b> Meaning-based search finds "solvency" for "CET1"; keyword search
+  finds "CET1" and "31 December 2025" exactly. Reciprocal Rank Fusion merges them on ranks
+  alone, so their scores never need calibrating.</li>
+  <li><b>One database.</b> Vectors, full text and filters all live in Postgres, with no second system to run.</li>
+  <li><b>MCP for tools.</b> The agent reaches search over the protocol, not by import, so the same
+  tools work unchanged in Claude Desktop or any other MCP client.</li>
+  <li><b>A verifier, measured.</b> A third mode runs the agent without its check step, to isolate
+  what the verifier adds.</li>
+</ul>
+
+<h2>Evaluation</h2>
+<p>Three modes (baseline RAG, agent without check, full agent) on a hand-labelled set of
+<span class="n">40</span> questions: single bank, multi-bank and table.</p>
+<div class="tbl"><table>
+  <tr><th>Metric</th><th>Question it answers</th></tr>
+  <tr><td>Context recall</td><td>Did retrieval find the right page?</td></tr>
+  <tr><td>Number match</td><td>Does every reference figure appear in the answer? Deterministic.</td></tr>
+  <tr><td>Judge correct</td><td>Is the answer right, wording and units aside?</td></tr>
+  <tr><td>Cites gold page</td><td>Does a citation point at the right page?</td></tr>
+  <tr><td>Tokens, latency, cost</td><td>What the accuracy costs, per question.</td></tr>
+</table></div>
+<p class="cap">Results will be published here once the gold set is fully labelled. A retrieval-only ablation (dense vs keyword vs hybrid) runs without any LLM calls.</p>
+
+<h2>Get it</h2>
+<p>Python, Postgres with pgvector, FastAPI. A fake model runs the whole pipeline without an
+API key, to check the plumbing. Setup and commands are in the README on
+<a href="https://github.com/hajar6883/bank-reports-agent">GitHub</a>.</p>
+
+<p class="foot"><a href="https://github.com/hajar6883/bank-reports-agent">github.com/hajar6883/bank-reports-agent</a> &nbsp;&middot;&nbsp; <a href="../../index.html">Back to index</a></p>
+</div>
+</body>
+</html>
