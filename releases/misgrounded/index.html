@@ -112,6 +112,19 @@ first; the judge only sees what they can't settle, and must quote its evidence w
 test case is fictional on purpose: a failed ERP rollout written as a French commercial
 dispute, <span class="n">10</span> exhibits, <span class="n">55</span> ground-truth facts.
 An LLM drafted the brief; a copy got <span class="n">12</span> planted errors.</p>
+<p>First, the premise itself. In a second copy, <span class="n">14</span> true facts were moved
+under a plausible wrong exhibit, and nothing else changed. The control is the clean brief:
+same claim, right exhibit.</p>
+<div class="tbl"><table>
+  <tr><th>True fact, wrong exhibit</th><th class="num">Result</th></tr>
+  <tr><td>Control: the right exhibit supports it (pass B)</td><td class="num">14 / 14</td></tr>
+  <tr><td>Accepted by the faithfulness check (pass A)</td><td class="num">14 / 14</td></tr>
+  <tr><td>Caught by the rules alone</td><td class="num">8 / 14</td></tr>
+  <tr><td>Caught by the cited-exhibit pass (pass B)</td><td class="num">14 / 14</td></tr>
+</table></div>
+<p>Faithfulness waved every one of them through. The rules catch the amounts and dates;
+qualitative facts, like a clause cited under the letter that mentions it, need the judge.</p>
+<p>Then, the planted errors: wrong amounts, wrong dates, facts that exist nowhere.</p>
 <div class="tbl"><table>
   <tr><th></th><th class="num">Result</th></tr>
   <tr><td>Planted errors caught (rules alone)</td><td class="num">7 / 12</td></tr>
@@ -125,7 +138,7 @@ as proof of it, and a <b>right date for the wrong event</b>, which the rules con
 judge can object. The one false alert is an argument, not a fact.</p>
 <p>The last two rows are a different failure: exhibit numbers are positions, not identities.
 Insert one document and more than half the citations silently point elsewhere.</p>
-<p class="cap">One fictional case, one model family, 66 claims. Planted errors aren't natural ones, so recall and false alerts are measured on separate briefs and never averaged.</p>
+<p class="cap">One fictional case, one model family, three briefs, 98 claims. Planted errors aren't natural ones, so recall and false alerts are measured on separate briefs and never averaged.</p>
 
 <h2>Get it</h2>
 <p>Python, no API key needed to replay: every model answer is cached in the repo. Setup and
