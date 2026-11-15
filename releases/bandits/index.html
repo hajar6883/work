@@ -74,7 +74,7 @@ b{font-weight:600;color:var(--hi)}
 <div class="masthead">
   <div><h1>Recommendation with multi-armed bandits</h1></div>
 </div>
-<p class="lede">Learning which video to show from logged feedback alone, and measuring it off-policy.</p>
+<p class="lede">Learning which video to show from logged feedback alone, and measuring when knowing the user starts to pay.</p>
 <p class="ghline"><a href="https://github.com/hajar6883/bandits-online-allocation">github.com/hajar6883/bandits-online-allocation</a></p>
 
 <h2>The constraint</h2>
@@ -82,22 +82,24 @@ b{font-weight:600;color:var(--hi)}
 Every slot spent on an unknown video is a slot not spent on one that already works, and every
 slot spent on the safe choice is a video you never learn about. That is the
 explore/exploit trade-off, and it is the whole problem.</p>
-<p>The harder part is evaluation. You cannot A/B test a policy against a dataset that has
-already been collected: if your policy wants to show video 42 to a user who never saw it,
-there is no reward to give it. So the measurement has to work off logged decisions only.</p>
+<p>The harder part is evaluation. A policy that wants to show video 42 to a user who never
+saw it has no reward to collect from an ordinary log. KuaiRec is the exception: in its small
+matrix nearly every user was shown nearly every video, so the logged answer exists for almost
+any choice a policy makes.</p>
 
 <h2>How it works</h2>
 <pre>  KuaiRec interaction log        4.7M rows
         |
         v
-   <b>prepare</b>     join users + items, sub-sample, drop leakage columns
+   <b>prepare</b>     join users + items, sub-sample to 135 users x 85 videos,
+                drop leakage columns
         |
         v
    <b>featurise</b>   reward = 1 if watch_ratio > 0.8
-                arm = video (85), context = 26 user features
+                arm = video (85), context = 23 user features + intercept
         |
         v
-   <b>evaluate</b>    5 policies x 500 rounds x 250 trials, off-policy replay
+   <b>evaluate</b>    5 policies x 5,000 rounds x 50 trials, replayed on the log
         |
         v
    results  ·  reward curves  ·  arm frequencies</pre>
@@ -106,18 +108,22 @@ there is no reward to give it. So the measurement has to work off logged decisio
   <li><b>Non-contextual</b> &mdash; epsilon-greedy, UCB1, Thompson Sampling. Video 42 is good or bad, full stop.</li>
   <li><b>Contextual</b> &mdash; LinUCB, Linear Thompson Sampling. Video 42 may suit this user and not the next.</li>
 </ul>
-<p>Evaluation is off-policy replay: the learner picks an arm, and a <i>logged</i> reward for
-that arm is read back from the interaction data. No simulator, no model inventing
-counterfactuals.</p>
+<p>Every policy is evaluated the same way: a user arrives, the policy picks a video for that
+user, and the reward is what that user <i>actually did</i> with that video in the log. A
+contextual policy sees the user's features before choosing; a non-contextual one does not.
+For the 6% of pairs with no log, the event is discarded and another user is drawn. No
+simulator, no model inventing counterfactuals.</p>
 <p>The whole thing runs as a <b>Dataiku DSS</b> Flow: three Python recipes, a scenario that
 force-rebuilds the chain from raw data, and a dashboard comparing the policies.</p>
 
 <h2>Evidence</h2>
 <ul>
-  <li>Over <span class="n">500</span> rounds x <span class="n">250</span> trials on <span class="n">85</span> arms: <b>LinUCB 0.918</b> against 0.678 to 0.778 for the non-contextual policies. The logged baseline rate is 0.508.</li>
-  <li>Context is worth roughly <span class="n">0.14</span> mean reward over the best non-contextual policy, on real user features rather than synthetic ones.</li>
-  <li>The port to Dataiku is verified, not assumed: the policy files are byte-identical to the originals, the rebuilt reward and context structures match exactly (85 arms, 26 dimensions, 0 differing), and with a shared seed the reward matrices are element-wise identical.</li>
-  <li>One caveat kept in the open: LinUCB always evaluates context index 0, so it exploits a fixed context per arm where LinTS samples one. Part of its margin is structural.</li>
+  <li><b>Early on, context costs more than it pays.</b> Over the first <span class="n">500</span> rounds epsilon-greedy scores 0.791 and LinUCB 0.725: LinUCB has 24 parameters to learn per video, epsilon-greedy has one.</li>
+  <li><b>With enough feedback, LinUCB passes the ceiling of any non-contextual policy.</b> Over the last <span class="n">500</span> of 5,000 rounds it reaches <b>0.966</b>, against 0.915 for the single best video shown to everyone and 0.889 for Thompson Sampling. A video picked at random scores 0.508.</li>
+  <li><b>The gain does not transfer to new users.</b> A per-video model on the same features, scored on held-out users, is worth 0.815, below the single best video. With 135 users, LinUCB mostly learns the tastes of the same users coming back.</li>
+  <li>Averaged over all 5,000 rounds: epsilon-greedy 0.854, Thompson Sampling 0.849, LinUCB 0.808, UCB1 0.794, Linear Thompson Sampling 0.693. Exploration parameters were set once, not tuned.</li>
+  <li>The port to Dataiku runs the same code: the policy files are byte-identical to the scripts' and, with a shared seed, the recipe reproduces the scripts' numbers exactly.</li>
+  <li>A correction: an earlier version of this page reported LinUCB at 0.918 against 0.778. LinUCB was reading one fixed context per video, so it never saw different users. The evaluation was rewritten so that all five policies face the same stream of users.</li>
 </ul>
 
 <p class="foot"><a href="https://github.com/hajar6883/bandits-online-allocation">github.com/hajar6883/bandits-online-allocation</a> &nbsp;&middot;&nbsp; <a href="../../index.html">Back to index</a></p>
